@@ -74,7 +74,6 @@ public class DirectedScrollView extends ReactViewGroup {
   @Override
   public boolean onInterceptTouchEvent(final MotionEvent motionEvent) {
     if (scrollEnabled == false) return false;
-
     emitScrollEvent(ScrollEventType.BEGIN_DRAG, 0, 0);
 
     int action = motionEvent.getAction();
