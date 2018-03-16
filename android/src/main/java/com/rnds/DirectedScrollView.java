@@ -6,13 +6,19 @@ import android.graphics.Matrix;
 import android.support.v4.view.animation.FastOutLinearInInterpolator;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
+import android.view.ViewParent;
 import android.view.ScaleGestureDetector;
 import android.view.animation.Interpolator;
 
+import com.facebook.react.views.scroll.ScrollEventType;
+import com.facebook.react.views.scroll.ScrollEvent;
 import com.facebook.react.uimanager.PixelUtil;
 import com.facebook.react.uimanager.events.NativeGestureUtil;
+import com.facebook.react.uimanager.UIManagerModule;
 import com.facebook.react.views.scroll.ReactScrollViewHelper;
 import com.facebook.react.views.view.ReactViewGroup;
+import com.facebook.react.bridge.ReactContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +31,11 @@ public class DirectedScrollView extends ReactViewGroup {
   private float minimumZoomScale = 1.0f;
   private float maximumZoomScale = 1.0f;
   private boolean bounces = true;
+  private boolean alwaysBounceVertical = true;
+  private boolean alwaysBounceHorizontal = true;
   private boolean bouncesZoom = true;
+  private boolean scrollEnabled = true;
+  private boolean pinchGestureEnabled = true;
 
   private float pivotX;
   private float pivotY;
@@ -38,13 +48,20 @@ public class DirectedScrollView extends ReactViewGroup {
   private float scaleFactor = 1.0f;
   private boolean isScaleInProgress;
   private boolean isScrollInProgress;
+  private float touchSlop;
+  private float lastPositionX, lastPositionY;
+  private boolean isDragging;
 
   private ScaleGestureDetector scaleDetector;
+
+  private ReactContext reactContext;
 
   public DirectedScrollView(Context context) {
     super(context);
 
-    initGestureListeners(context);
+    initPinchGestureListeners(context);
+    reactContext = (ReactContext)this.getContext();
+    touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
   }
 
   @Override
@@ -56,47 +73,87 @@ public class DirectedScrollView extends ReactViewGroup {
 
   @Override
   public boolean onInterceptTouchEvent(final MotionEvent motionEvent) {
-    ReactScrollViewHelper.emitScrollBeginDragEvent(this);
-    
-    return true;
+    if (!scrollEnabled) {
+      return false;
+    }
+
+    emitScrollEvent(ScrollEventType.BEGIN_DRAG, 0, 0);
+
+    int action = motionEvent.getAction();
+    if (action == MotionEvent.ACTION_UP | action == MotionEvent.ACTION_CANCEL) {
+      isScrollInProgress = false;
+      isScaleInProgress = false;
+      return false;
+    }
+
+    if (action == MotionEvent.ACTION_MOVE & isDragging) {
+      return true;
+    }
+
+    if (super.onInterceptTouchEvent(motionEvent)) {
+      return true;
+    }
+
+    switch (action) {
+      case MotionEvent.ACTION_DOWN:
+        lastPositionX = motionEvent.getX();
+        lastPositionY = motionEvent.getY();
+        onActionDown(motionEvent);
+        break;
+      case MotionEvent.ACTION_POINTER_DOWN:
+        onActionPointerDown();
+        break;
+      case MotionEvent.ACTION_MOVE:
+        float diffX = Math.abs(motionEvent.getX() - lastPositionX);
+        float diffY = Math.abs(motionEvent.getY() - lastPositionY);
+        if (isScaleInProgress || diffX > touchSlop || diffY > touchSlop) {
+          lastPositionX = motionEvent.getX();
+          lastPositionY = motionEvent.getY();
+          disallowInterceptTouchEventsForParent();
+          return true;
+        }
+        break;
+    }
+
+
+    return false;
   }
 
-  private void initGestureListeners(Context context) {
+  @Override
+  public boolean onTouchEvent(MotionEvent motionEvent) {
+    switch (motionEvent.getAction()) {
+      case MotionEvent.ACTION_DOWN:
+        onActionDown(motionEvent);
+        break;
+      case MotionEvent.ACTION_POINTER_DOWN:
+        onActionPointerDown();
+        break;
+      case MotionEvent.ACTION_MOVE:
+        onActionMove(motionEvent);
+        break;
+      case MotionEvent.ACTION_UP:
+        onActionUp();
+        break;
+    }
 
-    setOnTouchListener(new View.OnTouchListener() {
+    scaleDetector.onTouchEvent(motionEvent);
 
-      @Override
-      public boolean onTouch(View view, MotionEvent motionEvent) {
+    return true;
 
-        switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
-          case MotionEvent.ACTION_DOWN:
-            onActionDown(motionEvent);
-            break;
-          case MotionEvent.ACTION_POINTER_DOWN:
-            onActionPointerDown();
-            break;
-          case MotionEvent.ACTION_MOVE:
-            onActionMove(motionEvent);
-            break;
-          case MotionEvent.ACTION_UP:
-            onActionUp();
-            break;
-        }
+  }
 
-        scaleDetector.onTouchEvent(motionEvent);
+  private void disallowInterceptTouchEventsForParent() {
+    ViewParent parent = getParent();
+    if (parent != null) {
+      parent.requestDisallowInterceptTouchEvent(true);
+    }
+  }
 
-        return true;
-      }
-    });
-
+  private void initPinchGestureListeners(Context context) {
     scaleDetector = new ScaleGestureDetector(context, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
 
       @Override
       public boolean onScaleBegin(ScaleGestureDetector detector) {
-        if (isScrollInProgress) {
-          return false;
-        }
-
         float x = detector.getFocusX();
         float y = detector.getFocusY();
         pivotChildren(x, y);
@@ -106,6 +163,10 @@ public class DirectedScrollView extends ReactViewGroup {
 
       @Override
       public boolean onScale(ScaleGestureDetector detector) {
+        if (!pinchGestureEnabled) {
+          return false;
+        }
+
         scaleFactor *= detector.getScaleFactor();
         updateChildren();
         return true;
@@ -141,7 +202,7 @@ public class DirectedScrollView extends ReactViewGroup {
 
   private void onActionMove(MotionEvent motionEvent) {
     NativeGestureUtil.notifyNativeGestureStarted(this, motionEvent);
-    
+
     if (isScaleInProgress) return;
 
     isScrollInProgress = true;
@@ -153,17 +214,17 @@ public class DirectedScrollView extends ReactViewGroup {
     scrollY = startScrollY + deltaY;
 
     if (bounces) {
-      translateChildren(false);
+      clampAndTranslateChildren(false, !this.alwaysBounceVertical, !this.alwaysBounceHorizontal);
     } else {
       clampAndTranslateChildren(false);
     }
 
-    ReactScrollViewHelper.emitScrollEvent(this, 0, 0);
+    this.emitScrollEvent(ScrollEventType.SCROLL, deltaX * -1, deltaY * -1);
   }
 
   private void onActionUp() {
     if (isScrollInProgress) {
-      ReactScrollViewHelper.emitScrollEndDragEvent(this, 0, 0);
+      emitScrollEvent(ScrollEventType.END_DRAG, 0, 0);
       isScrollInProgress = false;
     }
 
@@ -177,26 +238,31 @@ public class DirectedScrollView extends ReactViewGroup {
 
     isScaleInProgress = false;
   }
-
   private void clampAndTranslateChildren(boolean animated) {
+    this.clampAndTranslateChildren(animated, true, true);
+  }
+
+  private void clampAndTranslateChildren(boolean animated, boolean clampVertical, boolean clampHorizontal) {
     float[] minPoints = transformPoints(new float[] { 0, 0 });
     float minX = minPoints[0];
     float minY = minPoints[1];
     float maxX = minPoints[0] + getMaxScrollX();
     float maxY = minPoints[1] + getMaxScrollY();
 
-    if (maxX > minX) {
-      scrollX = clamp(scrollX, -maxX, -minX);
-    } else {
-      scrollX = -minX;
+    if (clampHorizontal) {
+      if (maxX > minX) {
+        scrollX = clamp(scrollX, -maxX, -minX);
+      } else {
+        scrollX = -minX;
+      }
     }
-
-    if (maxY > minY) {
-      scrollY = clamp(scrollY, -maxY, -minY);
-    } else {
-      scrollY = -minY;
+    if (clampVertical) {
+      if (maxY > minY) {
+        scrollY = clamp(scrollY, -maxY, -minY);
+      } else {
+        scrollY = -minY;
+      }
     }
-
     translateChildren(animated);
   }
 
@@ -326,6 +392,24 @@ public class DirectedScrollView extends ReactViewGroup {
     return scrollableChildren;
   }
 
+  private void emitScrollEvent(
+    ScrollEventType scrollEventType,
+    float xVelocity,
+    float yVelocity) {
+    reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(
+      ScrollEvent.obtain(
+        getId(),
+        scrollEventType,
+        Math.round(scrollX * -1),
+        Math.round(scrollY * -1),
+        xVelocity,
+        yVelocity,
+        Math.round(getContentContainerWidth()),
+        Math.round(getContentContainerHeight()),
+        getWidth(),
+        getHeight()));
+  }
+
   public void setMaximumZoomScale(final float maximumZoomScale) {
     this.maximumZoomScale = maximumZoomScale;
   }
@@ -334,12 +418,27 @@ public class DirectedScrollView extends ReactViewGroup {
     this.minimumZoomScale = minimumZoomScale;
   }
 
+  public void setPinchGestureEnabled(final boolean pinchGestureEnabled) {
+    this.pinchGestureEnabled = pinchGestureEnabled;
+  }
+  public void setScrollEnabled(final boolean scrollEnabled) {
+    this.scrollEnabled = scrollEnabled;
+  }
+
   public void setBounces(final boolean bounces) {
     this.bounces = bounces;
   }
 
   public void setBouncesZoom(final boolean bouncesZoom) {
     this.bouncesZoom = bouncesZoom;
+  }
+
+  public void setAlwaysBounceHorizontal(final boolean alwaysBounceHorizontal) {
+    this.alwaysBounceHorizontal = alwaysBounceHorizontal;
+  }
+
+  public void setAlwaysBounceVertical(final boolean alwaysBounceVertical) {
+    this.alwaysBounceVertical = alwaysBounceVertical;
   }
 
   public void scrollTo(Double x, Double y, Boolean animated) {

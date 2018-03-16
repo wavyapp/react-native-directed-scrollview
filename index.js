@@ -1,7 +1,3 @@
-/**
- * @providesModule react-native-directed-scrollview
- */
-
 import React, { Component } from 'react';
 import ReactNative, { requireNativeComponent, View, UIManager, StyleSheet, Platform } from 'react-native';
 import ScrollResponder from 'react-native/Libraries/Components/ScrollResponder';
@@ -21,7 +17,7 @@ const ScrollView = createReactClass({
   getScrollResponder: function() {
     return this;
   },
-  getScrollableNode: function(): any {
+  getScrollableNode: function() {
     return ReactNative.findNodeHandle(this._scrollViewRef);
   },
   scrollTo: function({ x, y, animated }) {
@@ -31,16 +27,21 @@ const ScrollView = createReactClass({
       [x || 0, y || 0, animated !== false],
     );
   },
-  zoomToFit: function({ animated }) {
+  zoomToStart: function({ animated }) {
      UIManager.dispatchViewManagerCommand(
       this.getScrollableNode(),
-      UIManager.DirectedScrollView.Commands.zoomToFit,
+      UIManager.DirectedScrollView.Commands.zoomToStart,
       [animated !== false],
     );
   },
   _scrollViewRef: null,
   _setScrollViewRef: function(ref) {
     this._scrollViewRef = ref;
+  },
+  componentDidMount: function() {
+    setTimeout(() => {
+      this.zoomToStart({animated: false});
+    }, 0);
   },
   render: function() {
     return (

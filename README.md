@@ -10,10 +10,14 @@ The following props are supported:
 
 | Prop | Default | Description |
 | --- | --- | --- |
+| `scrollEnabled` | `true` | When false, the view cannot be scrolled via touch interaction. |
+| `pinchGestureEnabled` | `true` | When true, ScrollView allows use of pinch gestures to zoom in and out. |
 | `minimumZoomScale` | `1.0` | How far the content can zoom out. |
 | `maximumZoomScale` | `1.0` | How far the content can zoom in. |
 | `bounces` | `true` | Whether content bounces at the limits when scrolling. |
 | `bouncesZoom` | `true` | Whether content bounces at the limits when zooming. |
+| `alwaysBounceHorizontal` | `true` | When `bounces` is enabled, content will bounce horizontally. |
+| `alwaysBounceVertical` | `true` | When `bounces` is enabled, content will bounce vertically. |
 | **ios** `showsVerticalScrollIndicator` | `true` | Whether vertical scroll bars are visible. |
 | **ios** `showsHorizontalScrollIndicator` | `true` | Whether horizontal scroll bars are visible. |
 
