@@ -4,12 +4,16 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Matrix;
 import android.support.v4.view.animation.FastOutLinearInInterpolator;
+import android.support.animation.DynamicAnimation;
+import android.support.animation.FlingAnimation;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewParent;
 import android.view.ScaleGestureDetector;
 import android.view.animation.Interpolator;
+import android.view.VelocityTracker;
+import android.util.Log;
 
 import com.facebook.react.views.scroll.ScrollEventType;
 import com.facebook.react.views.scroll.ScrollEvent;
@@ -49,6 +53,9 @@ public class DirectedScrollView extends ReactViewGroup {
   private boolean isScaleInProgress;
   private boolean isScrollInProgress;
   private float touchSlop;
+  private int minFlingVelocity;
+  private int maxFlingVelocity;
+  private VelocityTracker velocityTracker = null;
   private float lastPositionX, lastPositionY;
   private boolean isDragging;
 
@@ -61,7 +68,11 @@ public class DirectedScrollView extends ReactViewGroup {
 
     initPinchGestureListeners(context);
     reactContext = (ReactContext)this.getContext();
-    touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+
+    ViewConfiguration vc = ViewConfiguration.get(context);
+    touchSlop = vc.getScaledTouchSlop();
+    minFlingVelocity = vc.getScaledMinimumFlingVelocity();
+    maxFlingVelocity = vc.getScaledMaximumFlingVelocity();
   }
 
   @Override
@@ -132,7 +143,11 @@ public class DirectedScrollView extends ReactViewGroup {
         onActionMove(motionEvent);
         break;
       case MotionEvent.ACTION_UP:
-        onActionUp();
+        onActionUp(motionEvent);
+        break;
+      case MotionEvent.ACTION_CANCEL:
+        // Return a VelocityTracker object back to be re-used by others.
+        Log.d("lalala", "Canelling velocityTracker");
         break;
     }
 
@@ -194,6 +209,13 @@ public class DirectedScrollView extends ReactViewGroup {
     startTouchY = motionEvent.getY();
     startScrollX = scrollX;
     startScrollY = scrollY;
+
+    if (velocityTracker == null) {
+      velocityTracker = VelocityTracker.obtain();
+    } else {
+      velocityTracker.clear();
+    }
+    velocityTracker.addMovement(motionEvent);
   }
 
   private void onActionPointerDown() {
@@ -219,10 +241,11 @@ public class DirectedScrollView extends ReactViewGroup {
       clampAndTranslateChildren(false);
     }
 
+    velocityTracker.addMovement(motionEvent);
     this.emitScrollEvent(ScrollEventType.SCROLL, deltaX * -1, deltaY * -1);
   }
 
-  private void onActionUp() {
+  private void onActionUp(MotionEvent motionEvent) {
     if (isScrollInProgress) {
       emitScrollEvent(ScrollEventType.END_DRAG, 0, 0);
       isScrollInProgress = false;
@@ -235,6 +258,22 @@ public class DirectedScrollView extends ReactViewGroup {
     if (bouncesZoom) {
       clampAndScaleChildren(true);
     }
+
+    velocityTracker.computeCurrentVelocity(1000);
+    float velocityX = velocityTracker.getXVelocity();
+    float velocityY = velocityTracker.getYVelocity();
+    Log.d("Velocity", "" + velocityX + " - " + velocityY);
+    if (minFlingVelocity <= velocityX && velocityX <= maxFlingVelocity && velocityY < velocityX) {
+      // The criteria have been satisfied, do something
+    }
+
+    FlingAnimation fling = new FlingAnimation(this, DynamicAnimation.SCROLL_X);
+    fling.setStartVelocity(-velocityX)
+        .setMinValue(0)
+        .setMaxValue(getMaxScrollX())
+        .setFriction(1.1f)
+        .start();
+
 
     isScaleInProgress = false;
   }
