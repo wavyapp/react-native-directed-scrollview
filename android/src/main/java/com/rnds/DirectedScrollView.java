@@ -218,6 +218,11 @@ public class DirectedScrollView extends ReactViewGroup {
 
     if (bounces) {
       clampAndTranslateChildren(false, !verticalBounceEnabled, !horizontalBounceEnabled);
+      clampAndTranslateChildren(
+        false,
+        !verticalBounceEnabled || (getMaxScrollY() <= 0 && !alwaysBounceVertical),
+        !horizontalBounceEnabled || (getMaxScrollX() <= 0 && !alwaysBounceHorizontal)
+      );
     } else {
       clampAndTranslateChildren(false);
     }

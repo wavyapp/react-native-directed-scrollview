@@ -18,8 +18,8 @@ The following props are supported:
 | `bouncesZoom` | `true` | Whether content bounces at the limits when zooming. |
 | `horizontalBounceEnabled` | `true` | If `false`, content will not bounce horizontally. |
 | `verticalBounceEnabled` | `true` | If `false`, content will not bounce vertically. |
-| `alwaysBounceHorizontal` | `true` | When `bounces` is enabled, content will bounce horizontally. |
-| `alwaysBounceVertical` | `true` | When `bounces` is enabled, content will bounce vertically. |
+| `alwaysBounceHorizontal` | `false` | When `bounces` is enabled, content will bounce horizontally even if the content is smaller than the bounds of the scroll view. |
+| `alwaysBounceVertical` | `false` | When `bounces` is enabled, content will bounce vertically even if the content is smaller than the bounds of the scroll view.. |
 | **ios** `showsVerticalScrollIndicator` | `true` | Whether vertical scroll bars are visible. |
 | **ios** `showsHorizontalScrollIndicator` | `true` | Whether horizontal scroll bars are visible. |
 
