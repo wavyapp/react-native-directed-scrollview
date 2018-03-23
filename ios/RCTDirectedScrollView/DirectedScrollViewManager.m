@@ -24,6 +24,22 @@
     [super scrollViewDidScroll:scrollView];
     UIView *contentView = [self contentView];
 
+    //FIXME: Pseudo code... a checker
+/*     if (!self.verticalBounceEnabled) { */
+        // if (scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
+            // scrollView.setContentOffset(CGPointMake(scrollView.contentOffset.x, scrollView.contentSize.height - scrollView.frame.size.height), animated: false)
+        // } else if (scrollView.contentOffset.y < 0)
+            // scrollView.setContentOffset(CGPointMake(scrollView.contentOffset.x, 0), animated: false)
+        // }
+    // }
+    // if (!self.horizontalBounceEnabled) {
+        // if (scrollView.contentOffset.x >= scrollView.contentSize.width - scrollView.frame.size.width) {
+            // scrollView.setContentOffset(CGPointMake(scrollView.contentSize.width - scrollView.frame.size.width, scrollView.contentOffset.y), animated: false)
+        // } else if (scrollView.contentOffset.y < 0)
+            // scrollView.setContentOffset(CGPointMake(0, scrollView.contentOffset.y), animated: false)
+        // }
+    /* } */
+
     for (UIView *subview in contentView.reactSubviews)
     {
         DirectedScrollViewChild *scrollableChild = (DirectedScrollViewChild*)subview;
@@ -155,6 +171,18 @@ RCT_EXPORT_METHOD(zoomToStart:(nonnull NSNumber *)reactTag
              [((RCTScrollView*)view).scrollView setZoomScale:1.0 animated:animated];
          } else {
              RCTLogError(@"tried to zoomToRect: on non-RCTScrollableProtocol view %@ with tag #%@", view, reactTag);
+         }
+     }];
+}
+
+RCT_EXPORT_METHOD(updateContentOffsetIfNeeded:(nonnull NSNumber *)reactTag) {
+    [self.bridge.uiManager addUIBlock:
+     ^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, UIView *> *viewRegistry){
+         UIView *view = viewRegistry[reactTag];
+         if ([view isKindOfClass:[RCTScrollView class]]) {
+             [(RCTScrollView *)view updateContentOffsetIfNeeded];
+         } else {
+             RCTLogError(@"tried to didResizeContent: on non-RCTScrollView %@ with tag #%@", view, reactTag);
          }
      }];
 }

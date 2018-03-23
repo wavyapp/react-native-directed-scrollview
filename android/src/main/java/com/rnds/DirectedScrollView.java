@@ -1,5 +1,6 @@
 package com.rnds;
 
+import android.util.Log;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Matrix;
@@ -31,8 +32,10 @@ public class DirectedScrollView extends ReactViewGroup {
   private float minimumZoomScale = 1.0f;
   private float maximumZoomScale = 1.0f;
   private boolean bounces = true;
-  private boolean alwaysBounceVertical = true;
-  private boolean alwaysBounceHorizontal = true;
+  private boolean verticalBounceEnabled = true;
+  private boolean horizontalBounceEnabled = true;
+  private boolean alwaysBounceVertical = false;
+  private boolean alwaysBounceHorizontal = false;
   private boolean bouncesZoom = true;
   private boolean scrollEnabled = true;
   private boolean pinchGestureEnabled = true;
@@ -214,7 +217,12 @@ public class DirectedScrollView extends ReactViewGroup {
     scrollY = startScrollY + deltaY;
 
     if (bounces) {
-      clampAndTranslateChildren(false, !this.alwaysBounceVertical, !this.alwaysBounceHorizontal);
+      clampAndTranslateChildren(false, !verticalBounceEnabled, !horizontalBounceEnabled);
+      clampAndTranslateChildren(
+        false,
+        !verticalBounceEnabled || (getMaxScrollY() <= 0 && !alwaysBounceVertical),
+        !horizontalBounceEnabled || (getMaxScrollX() <= 0 && !alwaysBounceHorizontal)
+      );
     } else {
       clampAndTranslateChildren(false);
     }
@@ -431,6 +439,14 @@ public class DirectedScrollView extends ReactViewGroup {
 
   public void setBouncesZoom(final boolean bouncesZoom) {
     this.bouncesZoom = bouncesZoom;
+  }
+
+  public void setVerticalBounceEnabled(final boolean verticalBounceEnabled) {
+    this.verticalBounceEnabled = verticalBounceEnabled;
+  }
+
+  public void setHorizontalBounceEnabled(final boolean horizontalBounceEnabled) {
+    this.horizontalBounceEnabled = horizontalBounceEnabled;
   }
 
   public void setAlwaysBounceHorizontal(final boolean alwaysBounceHorizontal) {
