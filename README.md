@@ -20,6 +20,7 @@ The following props are supported:
 | `verticalBounceEnabled` | `true` | If `false`, content will not bounce vertically. |
 | `alwaysBounceHorizontal` | `false` | When `bounces` is enabled, content will bounce horizontally even if the content is smaller than the bounds of the scroll view. |
 | `alwaysBounceVertical` | `false` | When `bounces` is enabled, content will bounce vertically even if the content is smaller than the bounds of the scroll view.. |
+| **ios** `scrollEventThrottle` | `0` | This controls how often the scroll event will be fired while scrolling (as a time interval in ms). |
 | **ios** `showsVerticalScrollIndicator` | `true` | Whether vertical scroll bars are visible. |
 | **ios** `showsHorizontalScrollIndicator` | `true` | Whether horizontal scroll bars are visible. |
 

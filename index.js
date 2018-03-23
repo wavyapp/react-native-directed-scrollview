@@ -34,14 +34,26 @@ const ScrollView = createReactClass({
       [animated !== false],
     );
   },
+  updateContentOffsetIfNeeded: function() {
+    setTimeout(() => {
+      UIManager.dispatchViewManagerCommand(
+        this.getScrollableNode(),
+        UIManager.DirectedScrollView.Commands.updateContentOffsetIfNeeded,
+        [],
+      );
+    }, 0);
+  },
   _scrollViewRef: null,
   _setScrollViewRef: function(ref) {
     this._scrollViewRef = ref;
   },
   componentDidMount: function() {
-    setTimeout(() => {
-      this.zoomToStart({animated: false});
-    }, 0);
+    this.updateContentOffsetIfNeeded();
+  },
+  componentDidUpdate: function(prevProps, prevState) {
+    if (this.props.contentContainerStyle != prevProps.contentContainerStyle) {
+      this.updateContentOffsetIfNeeded();
+    }
   },
   render: function() {
     return (
