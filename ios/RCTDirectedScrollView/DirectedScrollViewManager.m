@@ -24,21 +24,20 @@
     [super scrollViewDidScroll:scrollView];
     UIView *contentView = [self contentView];
 
-    //FIXME: Pseudo code... a checker
-/*     if (!self.verticalBounceEnabled) { */
-        // if (scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
-            // scrollView.setContentOffset(CGPointMake(scrollView.contentOffset.x, scrollView.contentSize.height - scrollView.frame.size.height), animated: false)
-        // } else if (scrollView.contentOffset.y < 0)
-            // scrollView.setContentOffset(CGPointMake(scrollView.contentOffset.x, 0), animated: false)
-        // }
-    // }
-    // if (!self.horizontalBounceEnabled) {
-        // if (scrollView.contentOffset.x >= scrollView.contentSize.width - scrollView.frame.size.width) {
-            // scrollView.setContentOffset(CGPointMake(scrollView.contentSize.width - scrollView.frame.size.width, scrollView.contentOffset.y), animated: false)
-        // } else if (scrollView.contentOffset.y < 0)
-            // scrollView.setContentOffset(CGPointMake(0, scrollView.contentOffset.y), animated: false)
-        // }
-    /* } */
+   if(!scrollView.alwaysBounceVertical) {
+        if (scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
+            [scrollView setContentOffset:CGPointMake(scrollView.contentOffset.x, scrollView.contentSize.height - scrollView.frame.size.height) animated:false];
+        } else if (scrollView.contentOffset.y < 0) {
+            [scrollView setContentOffset:CGPointMake(scrollView.contentOffset.x, 0) animated: false];
+        }
+   }
+   if(!scrollView.alwaysBounceHorizontal) {
+        if (scrollView.contentOffset.x >= scrollView.contentSize.width - scrollView.frame.size.width) {
+            [scrollView setContentOffset:CGPointMake(scrollView.contentSize.width - scrollView.frame.size.width, scrollView.contentOffset.y) animated: false];
+        } else if (scrollView.contentOffset.y < 0) {
+            [scrollView setContentOffset:CGPointMake(0, scrollView.contentOffset.y) animated: false];
+        }
+    }
 
     for (UIView *subview in contentView.reactSubviews)
     {
