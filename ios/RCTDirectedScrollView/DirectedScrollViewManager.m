@@ -27,9 +27,6 @@
     [super scrollViewDidScroll:scrollView];
     UIView *contentView = [self contentView];
     
-    RCTLogInfo(@"verticalBounceEnabled -> %d", _verticalBounceEnabled);
-    RCTLogInfo(@"horizontalBounceEnabled -> %d", _horizontalBounceEnabled);
-
     if(!_verticalBounceEnabled) {
         if (scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
             [scrollView setContentInset:UIEdgeInsetsMake(scrollView.contentInset.top,scrollView.contentInset.right,0,scrollView.contentInset.left)];
