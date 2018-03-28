@@ -22,27 +22,16 @@
 
 #pragma mark - ScrollView delegate
 
-@synthesize verticalBounceEnabled = _verticalBounceEnabled;
-@synthesize horizontalBounceEnabled = _horizontalBounceEnabled;
-
-- (BOOL) verticalBounceEnabled {
-    return _verticalBounceEnabled ? _verticalBounceEnabled : TRUE;
-}
-
-- (BOOL) horizontalBounceEnabled {
-    return _horizontalBounceEnabled ? _horizontalBounceEnabled : TRUE;
-}
-
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
     [super scrollViewDidScroll:scrollView];
     UIView *contentView = [self contentView];
-
+    
     RCTLogInfo(@"verticalBounceEnabled -> %d", _verticalBounceEnabled);
     RCTLogInfo(@"horizontalBounceEnabled -> %d", _horizontalBounceEnabled);
 
     if(!_verticalBounceEnabled) {
-        if (scrollView.contentInset.bottom <= 0) {
+        if (scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
             [scrollView setContentInset:UIEdgeInsetsMake(scrollView.contentInset.top,scrollView.contentInset.right,0,scrollView.contentInset.left)];
         } else if (scrollView.contentOffset.y < 0) {
             [scrollView setContentOffset:CGPointMake(scrollView.contentOffset.x, 0) animated: false];
@@ -146,6 +135,8 @@ RCT_EXPORT_VIEW_PROPERTY(decelerationRate, CGFloat)
 RCT_EXPORT_VIEW_PROPERTY(directionalLockEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(scrollEnabled, BOOL)
 RCT_REMAP_VIEW_PROPERTY(pinchGestureEnabled, scrollView.pinchGestureEnabled, BOOL)
+RCT_REMAP_VIEW_PROPERTY(verticalBounceEnabled, verticalBounceEnabled, BOOL)
+RCT_REMAP_VIEW_PROPERTY(horizontalBounceEnabled, horizontalBounceEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(contentInset, UIEdgeInsets)
 RCT_EXPORT_VIEW_PROPERTY(scrollIndicatorInsets, UIEdgeInsets)
 RCT_EXPORT_VIEW_PROPERTY(snapToInterval, int)
@@ -200,16 +191,6 @@ RCT_EXPORT_METHOD(updateContentOffsetIfNeeded:(nonnull NSNumber *)reactTag) {
              RCTLogError(@"tried to didResizeContent: on non-RCTScrollView %@ with tag #%@", view, reactTag);
          }
      }];
-}
-
-RCT_CUSTOM_VIEW_PROPERTY(verticalBounceEnabled, BOOL, DirectedScrollView)
-{
-    view.verticalBounceEnabled = json;
-}
-
-RCT_CUSTOM_VIEW_PROPERTY(horizontalBounceEnabled, BOOL, DirectedScrollView)
-{
-    view.horizontalBounceEnabled = json;
 }
 
 @end
