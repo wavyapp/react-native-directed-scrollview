@@ -13,6 +13,9 @@
 
 @property (nonatomic, weak) id <DirectedScrollViewDelegate> delegate;
 
+@property (nonatomic, assign) BOOL verticalBounceEnabled;
+@property (nonatomic, assign) BOOL horizontalBounceEnabled;
+
 @end
 
 @implementation DirectedScrollView
@@ -23,21 +26,21 @@
 {
     [super scrollViewDidScroll:scrollView];
     UIView *contentView = [self contentView];
-
-   if(!scrollView.alwaysBounceVertical) {
+    
+    if(!_verticalBounceEnabled) {
         if (scrollView.contentOffset.y >= scrollView.contentSize.height - scrollView.frame.size.height) {
-            [scrollView setContentOffset:CGPointMake(scrollView.contentOffset.x, scrollView.contentSize.height - scrollView.frame.size.height) animated:false];
+            [scrollView setContentInset:UIEdgeInsetsMake(scrollView.contentInset.top,scrollView.contentInset.right,0,scrollView.contentInset.left)];
         } else if (scrollView.contentOffset.y < 0) {
             [scrollView setContentOffset:CGPointMake(scrollView.contentOffset.x, 0) animated: false];
         }
-   }
-   if(!scrollView.alwaysBounceHorizontal) {
-        if (scrollView.contentOffset.x >= scrollView.contentSize.width - scrollView.frame.size.width) {
-            [scrollView setContentOffset:CGPointMake(scrollView.contentSize.width - scrollView.frame.size.width, scrollView.contentOffset.y) animated: false];
-        } else if (scrollView.contentOffset.y < 0) {
-            [scrollView setContentOffset:CGPointMake(0, scrollView.contentOffset.y) animated: false];
-        }
     }
+    if(!_horizontalBounceEnabled) {
+         if (scrollView.contentOffset.x >= scrollView.contentSize.width - scrollView.frame.size.width) {
+             [scrollView setContentOffset:CGPointMake(scrollView.contentSize.width - scrollView.frame.size.width, scrollView.contentOffset.y) animated: false];
+         } else if (scrollView.contentOffset.y < 0) {
+             [scrollView setContentOffset:CGPointMake(0, scrollView.contentOffset.y) animated: false];
+         }
+     }
 
     for (UIView *subview in contentView.reactSubviews)
     {
@@ -104,14 +107,13 @@ RCT_EXPORT_MODULE()
 
 // RCTDirectedScrollViewDelegate methods
 
--(void)scrollViewWillBeginDragging {
-    [self.bridge.eventDispatcher sendDeviceEventWithName:@"scrollViewWillBeginDragging" body:nil];
-}
-
 -(void)scrollViewDidEndDragging {
     [self.bridge.eventDispatcher sendDeviceEventWithName:@"scrollViewDidEndDragging" body:nil];
 }
 
+-(void)scrollViewWillBeginDragging {
+    [self.bridge.eventDispatcher sendDeviceEventWithName:@"scrollViewWillBeginDragging" body:nil];
+}
 
 // RCTScrollView properties
 
@@ -130,6 +132,8 @@ RCT_EXPORT_VIEW_PROPERTY(decelerationRate, CGFloat)
 RCT_EXPORT_VIEW_PROPERTY(directionalLockEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(scrollEnabled, BOOL)
 RCT_REMAP_VIEW_PROPERTY(pinchGestureEnabled, scrollView.pinchGestureEnabled, BOOL)
+RCT_REMAP_VIEW_PROPERTY(verticalBounceEnabled, verticalBounceEnabled, BOOL)
+RCT_REMAP_VIEW_PROPERTY(horizontalBounceEnabled, horizontalBounceEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(contentInset, UIEdgeInsets)
 RCT_EXPORT_VIEW_PROPERTY(scrollIndicatorInsets, UIEdgeInsets)
 RCT_EXPORT_VIEW_PROPERTY(snapToInterval, int)
